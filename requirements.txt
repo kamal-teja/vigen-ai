@@ -1,0 +1,9 @@
+boto3>=1.35.0,<2
+botocore==1.34.162
+python-dotenv==1.0.1
+pydantic==2.9.2
+crewai==0.51.1
+tenacity==8.5.0
+requests==2.32.3
+setuptools
+wheel
