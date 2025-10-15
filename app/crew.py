@@ -42,4 +42,6 @@ def run(product_name, product_desc, ad_idea=None):
     result = run_pipeline(planner, s_agent, e_agent, i_agent, v_agent, a_agent, ed_agent,
                           prompts, product_name, product_desc, chosen_idea)
     result["idea_used"] = chosen_idea
+    print("Pipeline result:", result)
+
     return result

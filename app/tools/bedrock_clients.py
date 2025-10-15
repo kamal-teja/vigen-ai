@@ -21,6 +21,32 @@ def rt():
         _rt = boto3.client("bedrock-runtime", region_name=_region)
     return _rt
 
+def presigned_http_url(bucket: str, key: str, expires_in: int = 3600) -> str:
+    """
+    Generate a secure presigned HTTPS URL for accessing a private S3 object.
+
+    Args:
+        bucket (str): The S3 bucket name.
+        key (str): The object key (path inside the bucket).
+        expires_in (int): Expiration in seconds (default: 1 hour).
+
+    Returns:
+        str: A temporary, signed HTTPS URL for direct access.
+    """
+    try:
+        s3_client = boto3.client("s3", region_name=os.getenv("AWS_REGION", "us-east-1"))
+        url = s3_client.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=expires_in,
+        )
+        print(f"[S3] Generated presigned URL for {bucket}/{key}")
+        return url
+
+    except Exception as e:
+        print(f"[S3 Error] Failed to create presigned URL for {bucket}/{key}: {e}")
+        raise
+
 # ---------- Nova Lite convenience (Conversation API) ----------
 def converse_text(model_id: str, text: str, max_tokens=512, temperature=0.5, top_p=0.9):
     client = bedrock_runtime()
