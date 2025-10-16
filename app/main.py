@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, Body, HTTPException, Path
 from pydantic import BaseModel, Field
-
+from typing import Optional
 # Assuming these are in a sibling `app` directory
 from app.dynamo_status import get_status
 from app.crew import run
@@ -46,6 +46,8 @@ class GenerateAdResponse(BaseModel):
     """The success response for the ad generation endpoint."""
     status: str = Field("success", example="success")
     run_id: str = Field(..., example="9f04705a33e6", description="A unique identifier for this generation job.")
+    final_video_path: str = Field(..., "https:outputs/313c5c054712/final%20video/final_video.mp4",description="The final generated video URL. Available only when editing_status is 'completed'.")
+
 
 class StatusResponse(BaseModel):
     """The response model for the status check endpoint."""
@@ -56,6 +58,8 @@ class StatusResponse(BaseModel):
     audio_generation_status: str = Field(..., example="pending")
     editing_status: str = Field(..., example="pending")
     updated_at: str = Field(..., example="2025-10-17T02:01:18.123Z")
+    final_video_uri: Optional[str] = Field(..., example="https:outputs/313c5c054712/final%20video/final_video.mp4", description="The final generated video URL. Available only when editing_status is 'completed'.")
+
 
 class ErrorResponse(BaseModel):
     """A generic error response model."""
@@ -93,8 +97,9 @@ def generate_ad(payload: GenerateAdRequest = Body(...)):
         run_id = crew_result.get("run_id")
         if not run_id or not isinstance(run_id, str):
             raise ValueError("The 'run' function did not return a valid 'run_id' string.")
+        final_video=crew_result.get("final_video_uri")
 
-        return {"status": "success", "run_id": run_id}
+        return {"status": "success", "run_id": run_id,"final_video_path":final_video}
 
     except ValueError as ve:
         raise HTTPException(status_code=500, detail=str(ve))

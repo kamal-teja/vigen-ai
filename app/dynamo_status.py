@@ -66,4 +66,13 @@ def get_status(run_id: str):
     response = table.get_item(Key={"id": run_id})
     return response.get("Item")
 
-
+def add_final_video_uri(run_id: str, video_uri: str):
+    """Adds the final video URI to the DynamoDB status item."""
+    ensure_row(run_id)
+    table.update_item(
+        Key={"id": run_id},
+        UpdateExpression="SET #uri = :uri_val, #u = :now",
+        ExpressionAttributeNames={"#uri": "final_video_uri", "#u": "updated_at"},
+        ExpressionAttributeValues={":uri_val": video_uri, ":now": _now()},
+    )
+    print(f"Final video URI for {run_id} saved to DynamoDB.")

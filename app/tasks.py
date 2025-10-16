@@ -14,7 +14,7 @@ from uuid import uuid4
 from typing import List
 
 from crewai import Task, Crew
-from app.dynamo_status import update_status,StepName
+from app.dynamo_status import update_status,StepName,add_final_video_uri
 from .tools.script_tools import generate_script, save_script_s3
 from .tools.evaluation_tools import evaluate_script
 from .tools.image_tools import generate_scene_image
@@ -132,7 +132,7 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
     update_status(run_id, StepName.video_generation,  "completed")
 
     update_status(run_id, StepName.audio_generation_status,  "completed")
-    
+
     update_status(run_id, StepName.editing, "running")
     # 3) Concat all videos -> one silent video
     combined_video_uri, combined_video_key, *_ = concat_videos_to_single(
@@ -151,6 +151,8 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
     )
     print("Final video at:", final_uri)
     update_status(run_id, StepName.editing, "completed")
+    # Call the new function to save the final URI
+    add_final_video_uri(run_id, final_uri)
     # Summary
     # --- Summary metadata ---
     summary = {
