@@ -14,7 +14,7 @@ from uuid import uuid4
 from typing import List
 
 from crewai import Task, Crew
-from app.dynamo_status import update_status,StepName,add_final_video_uri
+from app.dynamo_status import update_status,StepName
 from .tools.script_tools import generate_script, save_script_s3
 from .tools.evaluation_tools import evaluate_script
 from .tools.image_tools import generate_scene_image
@@ -68,7 +68,7 @@ def _enforce_dialogue_caps(script: dict, max_words: int) -> dict:
 
 
 def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio, editor,
-                 prompts, product_name, product_desc, ad_idea):
+                 prompts, product_name, product_desc, ad_idea,current_run_id):
     """
     Artifacts under:
     outputs/<RUN_ID>/
@@ -82,18 +82,18 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
       final video/concat_audio.mp4
       final video/final_video.mp4
     """
-    run_id = uuid4().hex[:12]
+    run_id = current_run_id
     run_prefix = f"{DEFAULT_PREFIX}/{run_id}"
 
     # 1) Script generation + evaluation loop
-    update_status(run_id, StepName.script_generation, "running")
+    update_status(run_id, StepName.status, "1_script generation")
     script = generate_script(product_name, product_desc, ad_idea, prompts["script"])
     # enforce short dialogues BEFORE synthesizing audio
     script = _enforce_dialogue_caps(script, MAX_WORDS_PER_DIALOGUE)
     print("Script generated succesfully with capped dialogue.")
-    update_status(run_id, StepName.script_generation, "completed")
+    # update_status(run_id, StepName.script_generation, "completed")
 
-    update_status(run_id, StepName.script_evaluation, "running")
+    update_status(run_id, StepName.status, "2_script evaluation")
     verdict = evaluate_script(product_name, product_desc, script, prompts["rubric"])
     rounds = 0
     while verdict.get("decision") != "approve" and rounds < 3:
@@ -103,13 +103,13 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
         verdict = evaluate_script(product_name, product_desc, script, prompts["rubric"])
         rounds += 1
     print("Evaluation completed.")
-    update_status(run_id, StepName.script_evaluation, "completed")
+    # update_status(run_id, StepName.script_evaluation, "completed")
 
     # Save artifacts in /script/
     save_script_s3(script, BUCKET, f"{run_prefix}/script/script.json")
     put_json_s3(BUCKET, f"{run_prefix}/script/eval.json", verdict)
 
-    update_status(run_id, StepName.video_generation, "running")
+    update_status(run_id, StepName.status, "3_video generation")
     # 2) Per-scene assets (no per-scene mux anymore)
     image_keys: List[str] = []
     video_keys: List[str] = []
@@ -129,11 +129,11 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
         aud_key = synth_dialogue_scene(scene, BUCKET, f"{run_prefix}/audio")
         audio_keys.append(aud_key)
         print(f"Scene {idx} audio generated: {aud_key}")
-    update_status(run_id, StepName.video_generation,  "completed")
+    # update_status(run_id, StepName.video_generation,  "completed")
 
-    update_status(run_id, StepName.audio_generation_status,  "completed")
+    update_status(run_id, StepName.status,  "4_audio generation")
 
-    update_status(run_id, StepName.editing, "running")
+    update_status(run_id, StepName.status, "5_editing")
     # 3) Concat all videos -> one silent video
     combined_video_uri, combined_video_key, *_ = concat_videos_to_single(
     BUCKET, video_keys, f"{run_prefix}/final video")
@@ -150,9 +150,9 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
         BUCKET, combined_video_key, combined_audio_key, f"{run_prefix}/final video"
     )
     print("Final video at:", final_uri)
-    update_status(run_id, StepName.editing, "completed")
+    update_status(run_id, StepName.status, "6_completed")
     # Call the new function to save the final URI
-    add_final_video_uri(run_id, final_uri)
+    update_status(run_id, StepName.final_video_path, final_uri)
     # Summary
     # --- Summary metadata ---
     summary = {
