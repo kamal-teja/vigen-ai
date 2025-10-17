@@ -3,14 +3,22 @@ FROM python:3.11-slim
 # Set the working directory inside container
 WORKDIR /app
 
-# Copy project files into the container
-COPY . /app
+# Copy dependency manifest first for better caching
+COPY requirements.txt ./
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install system and Python dependencies using BuildKit caches
+RUN --mount=type=cache,target=/var/cache/apt \
+	--mount=type=cache,target=/var/lib/apt \
+	apt-get update \
+	&& apt-get install -y --no-install-recommends ffmpeg \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the project source
+COPY . /app
 
 # Expose FastAPI port
 EXPOSE 8000
 
-# Run the FastAPI app from inside app/ folder
+# Run the FastAPI app from inside app/ folder (production defaults)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

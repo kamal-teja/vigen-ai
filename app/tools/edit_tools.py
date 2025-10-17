@@ -473,10 +473,22 @@ def http_url(bucket: str, key: str) -> str:
 
 # ---------- FFmpeg runner ----------
 def _run_ffmpeg(cmd: str) -> None:
+    """Execute an ffmpeg shell command and surface stderr on failure."""
     print(f"\n🚀 ffmpeg: {cmd}")
-    proc = subprocess.run(cmd, shell=True)
+    proc = subprocess.run(
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
     if proc.returncode != 0:
-        raise RuntimeError(f"❌ FFmpeg failed: {cmd}")
+        stderr = proc.stderr.strip()
+        stdout = proc.stdout.strip()
+        raise RuntimeError(
+            "❌ FFmpeg failed: "
+            f"{cmd}\n--- stdout ---\n{stdout}\n--- stderr ---\n{stderr}"
+        )
 
 
 # ---------- Public API ----------

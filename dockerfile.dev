@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+# Set the working directory inside container
+WORKDIR /app
+
+# Copy dependency manifest first for better caching
+COPY requirements.txt ./
+
+# Install dependencies (including ffmpeg for media processing) with BuildKit caches
+RUN --mount=type=cache,target=/var/cache/apt \
+    --mount=type=cache,target=/var/lib/apt \
+    apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir -r requirements.txt
+
+# Copy project files into the container
+COPY . /app
+
+# Expose FastAPI port
+EXPOSE 8000
+
+# Run the FastAPI app with auto-reload enabled for development
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

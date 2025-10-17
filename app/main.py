@@ -1,11 +1,12 @@
 import os
 import uuid
+import traceback
 from dotenv import load_dotenv
 from fastapi import FastAPI, Body, HTTPException, Path, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from app.dynamo_status import get_status
+from app.dynamo_status import get_status, update_status, StepName
 from app.crew import run
 
 load_dotenv()
@@ -32,12 +33,16 @@ class GenerateAdRequest(BaseModel):
         description="A detailed description of the product.",
         example="Secure, keyless home access with fingerprint unlock."
     )
-    run_id: str = Field(description="A unique identifier for this generation job.", example="sample-run-id-12345")
+    run_id: Optional[str] = Field(
+        default=None,
+        description="A unique identifier for this generation job. Generated automatically when omitted.",
+        example="sample-run-id-12345",
+    )
 
 
 class GenerateAdResponse(BaseModel):
     """The success response for the ad generation endpoint."""
-    status: str = Field(default="success", example="success")
+    status: str = Field(default="accepted", example="accepted")
     # MODIFICATION: Updated example to be more user-friendly.
     run_id: str = Field(description="A unique identifier for this generation job.", example="sample-run-id-12345")
 
@@ -61,6 +66,18 @@ class StatusResponse(BaseModel):
 class ErrorResponse(BaseModel):
     detail: str = Field(example="A specific error message.")
 
+def _run_generation_task(product_name: str, product_desc: str, run_id: str) -> None:
+    """Kick off the heavy pipeline and ensure status is updated on failures."""
+    try:
+        run(product_name=product_name, product_desc=product_desc, current_run_id=run_id)
+    except Exception as exc:
+        traceback.print_exc()
+        try:
+            update_status(run_id, StepName.status, f"failed: {exc}")
+        except Exception as status_err:
+            print(f"Failed to record failure status for {run_id}: {status_err}")
+
+
 # --- API Endpoints ---
 
 @app.post(
@@ -75,21 +92,10 @@ def generate_ad(payload: GenerateAdRequest, background_tasks: BackgroundTasks):
     This endpoint returns a `run_id` immediately, which is used to poll the status.
     """
     try:
-        # Generate a unique ID for this run
-        crew_result = run(
-            product_name=payload.name,
-            product_desc=payload.desc,
-            current_run_id=payload.run_id
-        )
-
-        # --- FIX ---
-        # Extract the actual run_id string from the result dictionary.
-        run_id = crew_result.get("run_id")
-        if not run_id or not isinstance(run_id, str):
-            raise ValueError("The 'run' function did not return a valid 'run_id' string.")
-        final_video=crew_result.get("final_video_uri")
-
-        return {"status": "success", "run_id": run_id,"final_video_path":final_video}
+        run_id = payload.run_id or str(uuid.uuid4())
+        update_status(run_id, StepName.status, "queued")
+        background_tasks.add_task(_run_generation_task, payload.name, payload.desc, run_id)
+        return {"status": "accepted", "run_id": run_id}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start the background task: {e}")
