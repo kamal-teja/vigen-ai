@@ -86,14 +86,14 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
     run_prefix = f"{DEFAULT_PREFIX}/{run_id}"
 
     # 1) Script generation + evaluation loop
-    update_status(run_id, StepName.status, "1_script generation")
+    update_status(run_id, StepName.script_generation_status, "RUNNING")
     script = generate_script(product_name, product_desc, ad_idea, prompts["script"])
     # enforce short dialogues BEFORE synthesizing audio
     script = _enforce_dialogue_caps(script, MAX_WORDS_PER_DIALOGUE)
     print("Script generated succesfully with capped dialogue.")
-    # update_status(run_id, StepName.script_generation, "completed")
+    update_status(run_id, StepName.script_generation_status, "COMPLETED")
 
-    update_status(run_id, StepName.status, "2_script evaluation")
+    update_status(run_id, StepName.script_evaluation_status, "RUNNING")
     verdict = evaluate_script(product_name, product_desc, script, prompts["rubric"])
     rounds = 0
     while verdict.get("decision") != "approve" and rounds < 3:
@@ -102,14 +102,13 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
         script = _enforce_dialogue_caps(script, MAX_WORDS_PER_DIALOGUE)
         verdict = evaluate_script(product_name, product_desc, script, prompts["rubric"])
         rounds += 1
-    print("Evaluation completed.")
-    # update_status(run_id, StepName.script_evaluation, "completed")
+    update_status(run_id, StepName.script_evaluation_status, "COMPLETED")
 
     # Save artifacts in /script/
     save_script_s3(script, BUCKET, f"{run_prefix}/script/script.json")
     put_json_s3(BUCKET, f"{run_prefix}/script/eval.json", verdict)
 
-    update_status(run_id, StepName.status, "3_video generation")
+    update_status(run_id, StepName.video_generation_status, "RUNNING")
     # 2) Per-scene assets (no per-scene mux anymore)
     image_keys: List[str] = []
     video_keys: List[str] = []
@@ -129,11 +128,13 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
         aud_key = synth_dialogue_scene(scene, BUCKET, f"{run_prefix}/audio")
         audio_keys.append(aud_key)
         print(f"Scene {idx} audio generated: {aud_key}")
-    # update_status(run_id, StepName.video_generation,  "completed")
+    update_status(run_id, StepName.video_generation_status, "COMPLETED")
 
-    update_status(run_id, StepName.status,  "4_audio generation")
+    update_status(run_id, StepName.audio_generation_status, "RUNNING")
 
-    update_status(run_id, StepName.status, "5_editing")
+    update_status(run_id, StepName.audio_generation_status, "COMPLETED")
+
+    update_status(run_id, StepName.editing_status, "RUNNING")
     # 3) Concat all videos -> one silent video
     combined_video_uri, combined_video_key, *_ = concat_videos_to_single(
     BUCKET, video_keys, f"{run_prefix}/final video")
@@ -150,7 +151,7 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
         BUCKET, combined_video_key, combined_audio_key, f"{run_prefix}/final video"
     )
     print("Final video at:", final_uri)
-    update_status(run_id, StepName.status, "6_completed")
+    update_status(run_id, StepName.editing_status, "COMPLETED")
     # Call the new function to save the final URI
     update_status(run_id, StepName.final_video_path, final_uri)
     # Summary

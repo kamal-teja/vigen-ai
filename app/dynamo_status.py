@@ -12,20 +12,20 @@ dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
 table = dynamodb.Table(name=DDB_TABLE)
 
 class StepName(str, Enum):
-    status = "status"
     final_video_path = "final_video_path"
-    # script_evaluation = "script_evaluation"
-    # video_generation  = "video_generation"
-    # audio_generation  = "audio_generation"
-    # editing           = "editing"
+    script_generation_status = "script_generation_status"
+    script_evaluation_status = "script_evaluation_status"
+    video_generation_status = "video_generation_status"
+    audio_generation_status = "audio_generation_status"
+    editing_status = "editing_status"
 
 STEP_ATTR = {
-    StepName.status: "status",
     StepName.final_video_path: "final_video_path",
-    # StepName.script_evaluation: "script_evaluation_status",
-    # StepName.video_generation:  "video_generation_status",
-    # StepName.audio_generation:  "audio_generation_status",
-    # StepName.editing:           "editing_status",
+    StepName.script_generation_status: "script_generation_status",
+    StepName.script_evaluation_status: "script_evaluation_status",
+    StepName.video_generation_status: "video_generation_status",
+    StepName.audio_generation_status: "audio_generation_status",
+    StepName.editing_status: "editing_status",
 }
 
 def _now():
@@ -38,8 +38,12 @@ def ensure_row(run_id: str):
         return
     seed = {
         "run_id": run_id,
-        "status": "pending",
-        "final_video_path": "pending",
+        "script_generation_status": "PENDING",
+        "script_evaluation_status": "PENDING",
+        "video_generation_status": "PENDING",
+        "audio_generation_status": "PENDING",
+        "editing_status": "PENDING",
+        "final_video_path": None,
         "updated_at": _now(),
     }
     table.put_item(Item=seed)
@@ -61,9 +65,20 @@ def update_status(run_id: str, step: StepName, status: str):
 
 def get_status(run_id: str):
     """Fetch the consolidated row for UI."""
-    ensure_row(run_id)
     response = table.get_item(Key={"run_id": run_id})
-    return response.get("Item")
+    item = response.get("Item")
+    if not item:
+        return None
+    return {
+        'id': item['run_id'],
+        'script_generation_status': item.get('script_generation_status', 'PENDING'),
+        'script_evaluation_status': item.get('script_evaluation_status', 'PENDING'),
+        'video_generation_status': item.get('video_generation_status', 'PENDING'),
+        'audio_generation_status': item.get('audio_generation_status', 'PENDING'),
+        'editing_status': item.get('editing_status', 'PENDING'),
+        'updated_at': item['updated_at'],
+        'final_video_uri': item.get('final_video_path')
+    }
 
 # def add_final_video_uri(run_id: str, video_uri: str):
 #     """Adds the final video URI to the DynamoDB status item."""

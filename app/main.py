@@ -48,7 +48,6 @@ class GenerateAdResponse(BaseModel):
 
 class StatusResponse(BaseModel):
     """The response model for the status check endpoint."""
-    # MODIFICATION: Updated example to be consistent.
     id: str = Field(example="sample-run-id-12345")
     script_generation_status: str = Field(example="completed")
     script_evaluation_status: str = Field(example="completed")
@@ -59,7 +58,6 @@ class StatusResponse(BaseModel):
     final_video_uri: Optional[str] = Field(
         default=None,
         description="The final generated video URL. Will be populated once editing_status is 'completed'.",
-        # MODIFICATION: Updated example to be consistent.
         example="https://vi-gen-dev.s3.amazonaws.com/outputs/sample-run-id-12345/final_video.mp4"
     )
 
@@ -73,7 +71,7 @@ def _run_generation_task(product_name: str, product_desc: str, run_id: str) -> N
     except Exception as exc:
         traceback.print_exc()
         try:
-            update_status(run_id, StepName.status, f"failed: {exc}")
+            update_status(run_id, StepName.editing_status, f"FAILED: {exc}")
         except Exception as status_err:
             print(f"Failed to record failure status for {run_id}: {status_err}")
 
@@ -93,7 +91,6 @@ def generate_ad(payload: GenerateAdRequest, background_tasks: BackgroundTasks):
     """
     try:
         run_id = payload.run_id or str(uuid.uuid4())
-        update_status(run_id, StepName.status, "queued")
         background_tasks.add_task(_run_generation_task, payload.name, payload.desc, run_id)
         return {"status": "accepted", "run_id": run_id}
         
@@ -117,8 +114,10 @@ def get_run_status(run_id: str = Path(..., example="sample-run-id-12345")):
         if not item:
             raise HTTPException(status_code=404, detail=f"Run with ID '{run_id}' not found.")
         return item
+    except HTTPException:
+        raise  # Re-raise HTTPExceptions (like 404) as-is
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while fetching status: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/", tags=["General"], include_in_schema=False)
 def root():
