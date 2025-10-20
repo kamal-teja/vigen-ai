@@ -24,36 +24,87 @@ var/
 MANIFEST
 
 # Virtual environments
-.env/
+.env
 .venv/
 ENV/
 env/
 venv/
 
-# Python dotenv
-.env
+# Environment files
 *.env
+.env.*
 
-# pyinstaller
-*.manifest
-*.spec
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Installer logs
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Production builds
+dist/
+dist-ssr/
+build/
+*.local
+
+# Logs
+logs/
+*.log
+
+# Docker
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Database files
+*.db
+*.sqlite3
+
+# AWS credentials (never commit these)
+.aws/
+aws-exports.js
+
+# Python specific
+*.pyd
+*.pyo
+*.pyt
+.python-version
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
+# Testing
 .coverage
 .coverage.*
 .cache
 .pytest_cache/
-cover/
-coverage.xml
-nosetests.xml
-coverage.json
+htmlcov/
+.tox/
+.nox/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -61,28 +112,39 @@ coverage.json
 # pyenv
 .python-version
 
-# VS Code
-.vscode/
+# pipenv
+Pipfile.lock
 
-# macOS
-.DS_Store
+# poetry
+poetry.lock
 
-# Docker
-*.pid
+# PEP 582
+__pypackages__/
 
-# Logs
-*.log
+# Celery
+celerybeat-schedule
+celerybeat.pid
 
-# Terraform / CDK (if any)
-.terraform/
-cdk.out/
+# SageMath parsed files
+*.sage.py
 
-# Cache
-*.mypy_cache/
-*.ruff_cache/
+# Environments
+.env.backup
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Node modules (if present)
-node_modules/
+# Spyder project settings
+.spyderproject
+.spyproject
 
-# Any local data artifacts
-outputs/
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# Lock files
+package-lock.json
+yarn.lock

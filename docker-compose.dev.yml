@@ -1,17 +1,86 @@
-version: "3.9"
-
 services:
-  app:
+  # ===== DEVELOPMENT WEB APPLICATION SERVICES =====
+  
+  # Frontend Development Server
+  frontend-dev:
     build:
-      context: .
-      dockerfile: dockerfile.dev
-    image: ad-video-gen-dev
-    container_name: ad-video-gen-dev
+      context: ./app/frontend
+      dockerfile: Dockerfile.dev
+    container_name: vigen-frontend-dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend-dev
+    volumes:
+      - ./app/frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - vigen-dev-network
+
+  # Backend Development Server
+  backend-dev:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile.dev
+    container_name: vigen-backend-dev
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+    depends_on:
+      - crew-api-dev
     volumes:
-      - .:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    restart: unless-stopped
+      - ./app/backend:/app
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      USERS_TABLE: ${USERS_TABLE:-adgen-users-dev}
+      ADVERTISEMENTS_TABLE: ${ADVERTISEMENTS_TABLE:-adgen-advertisements-dev}
+      CREW_ENDPOINT_URL: http://crew-api-dev:8001
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DEBUG: "True"
+    networks:
+      - vigen-dev-network
+
+  # ===== DEVELOPMENT AI SERVICE =====
+  
+  # CrewAI Development Server
+  crew-api-dev:
+    build:
+      context: ./crew-api
+      dockerfile: dockerfile.dev
+    container_name: vigen-crew-api-dev
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./crew-api:/app
+    environment:
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      DDB_TABLE: ${DDB_TABLE:-vigen_status_table_dev}
+      S3_BUCKET: ${S3_BUCKET_NAME}
+      S3_PREFIX: ${S3_PREFIX:-dev-outputs}
+      BEDROCK_SCRIPT_MODEL_ID: ${BEDROCK_SCRIPT_MODEL_ID}
+      BEDROCK_EVAL_MODEL_ID: ${BEDROCK_EVAL_MODEL_ID}
+      BEDROCK_IMAGE_MODEL_ID: ${BEDROCK_IMAGE_MODEL_ID}
+      BEDROCK_VIDEO_MODEL_ID: ${BEDROCK_VIDEO_MODEL_ID}
+      POLLY_VOICE: ${POLLY_VOICE:-Joanna}
+      POLLY_FORMAT: ${POLLY_FORMAT:-mp3}
+      MEDIACONVERT_ROLE_ARN: ${MEDIACONVERT_ROLE_ARN}
+      MEDIACONVERT_ENDPOINT: ${MEDIACONVERT_ENDPOINT}
+      MEDIACONVERT_H264_MAX_BITRATE: ${MEDIACONVERT_H264_MAX_BITRATE:-5000000}
+      S3_SSE_KMS_KEY_ARN: ${S3_SSE_KMS_KEY_ARN}
+      VIDEO_PROVIDER: ${VIDEO_PROVIDER:-nova}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-unused}
+    networks:
+      - vigen-dev-network
+
+networks:
+  vigen-dev-network:
+    driver: bridge

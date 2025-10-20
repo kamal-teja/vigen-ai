@@ -123,3 +123,7 @@ def get_run_status(run_id: str = Path(..., example="sample-run-id-12345")):
 def root():
     return {"message": "CrewAI Ad Video Generator API is running 🚀"}
 
+@app.get("/health", tags=["General"], include_in_schema=False)
+def health():
+    return {"status": "healthy", "service": "crew-api"}
+

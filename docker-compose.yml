@@ -1,14 +1,97 @@
-version: "3.9"
-
 services:
-  app:
+  # ===== WEB APPLICATION SERVICES =====
+  
+  # Frontend React Application
+  frontend:
     build:
-      context: .
-      dockerfile: dockerfile
-    image: ad-video-gen
-    container_name: ad-video-gen
-    ports:
-      - 8000:8000
-    env_file:
-      - .env
+      context: ./app/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    container_name: vigen-frontend
     restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - vigen-network
+
+  # Backend FastAPI Service
+  backend:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile
+    container_name: vigen-backend
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      USERS_TABLE: ${USERS_TABLE:-adgen-users}
+      ADVERTISEMENTS_TABLE: ${ADVERTISEMENTS_TABLE:-adgen-advertisements}
+      CREW_ENDPOINT_URL: ${CREW_ENDPOINT_URL:-http://crew-api:8001}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DEBUG: ${DEBUG:-False}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - crew-api
+    networks:
+      - vigen-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===== AI VIDEO GENERATION SERVICE =====
+  
+  # CrewAI Video Generation Engine
+  crew-api:
+    build:
+      context: ./crew-api
+      dockerfile: dockerfile
+    container_name: vigen-crew-api
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      DDB_TABLE: ${DDB_TABLE:-vigen_status_table}
+      S3_BUCKET: ${S3_BUCKET_NAME}
+      S3_PREFIX: ${S3_PREFIX:-outputs}
+      BEDROCK_SCRIPT_MODEL_ID: ${BEDROCK_SCRIPT_MODEL_ID}
+      BEDROCK_EVAL_MODEL_ID: ${BEDROCK_EVAL_MODEL_ID}
+      BEDROCK_IMAGE_MODEL_ID: ${BEDROCK_IMAGE_MODEL_ID}
+      BEDROCK_VIDEO_MODEL_ID: ${BEDROCK_VIDEO_MODEL_ID}
+      POLLY_VOICE: ${POLLY_VOICE:-Joanna}
+      POLLY_FORMAT: ${POLLY_FORMAT:-mp3}
+      MEDIACONVERT_ROLE_ARN: ${MEDIACONVERT_ROLE_ARN}
+      MEDIACONVERT_ENDPOINT: ${MEDIACONVERT_ENDPOINT}
+      MEDIACONVERT_H264_MAX_BITRATE: ${MEDIACONVERT_H264_MAX_BITRATE:-5000000}
+      S3_SSE_KMS_KEY_ARN: ${S3_SSE_KMS_KEY_ARN}
+      VIDEO_PROVIDER: ${VIDEO_PROVIDER:-nova}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-unused}
+    networks:
+      - vigen-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  vigen-network:
+    driver: bridge
+
+volumes:
+  vigen-data:

@@ -1,0 +1,77 @@
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+.env
+.DS_Store
+*.db
+*.sqlite3
+node_modules
+dist-ssr
+*.local
+
+# Python extras
+*.pyd
+*.pyo
+*.pyt
+build/
+*.egg-info/
+.python-version
+
+# pipenv / poetry
+poetry.lock
+Pipfile.lock
+
+# VSCode
+.vscode/
+
+# IDEs
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env.*
+.env.docker
+
+# Vite
+/.vite
+
+# Generated frontend assets
+frontend/dist/
+frontend/node_modules/
+frontend/.cache/
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# AWS credentials
+.aws/
+*.pem
+
+# Misc
+coverage/
+.coverage
+htmlcov/
+
+# Secrets
+secrets.yml
