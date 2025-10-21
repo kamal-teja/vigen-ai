@@ -22,12 +22,22 @@ class DynamoDBService:
     This GSI enables efficient queries for "all ads of user X with status Y".
     """
     def __init__(self):
-        self.dynamodb = boto3.resource(
-            'dynamodb',
-            region_name=settings.AWS_REGION,
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-        )
+        # Build boto3 resource config
+        # If AWS_ACCESS_KEY_ID is None/empty, boto3 auto-discovers credentials from:
+        # - IAM role (App Runner, ECS, EC2)
+        # - Environment variables
+        # - AWS CLI credentials (~/.aws/credentials)
+        resource_config = {
+            'service_name': 'dynamodb',
+            'region_name': settings.AWS_REGION
+        }
+        
+        # Only pass explicit credentials if they're provided (local dev)
+        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+            resource_config['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
+            resource_config['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
+        
+        self.dynamodb = boto3.resource(**resource_config)
         self.users_table = self.dynamodb.Table(settings.USERS_TABLE)
         self.advertisements_table = self.dynamodb.Table(settings.ADVERTISEMENTS_TABLE)
 

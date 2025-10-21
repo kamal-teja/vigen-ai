@@ -12,13 +12,23 @@ from app.config import settings
 
 class S3Service:
     def __init__(self):
-        self.s3_client = boto3.client(
-            's3',
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_REGION,
-            config=Config(signature_version='s3v4')
-        )
+        # Build boto3 client config
+        # If AWS_ACCESS_KEY_ID is None/empty, boto3 auto-discovers credentials from:
+        # - IAM role (App Runner, ECS, EC2)
+        # - Environment variables
+        # - AWS CLI credentials (~/.aws/credentials)
+        client_config = {
+            'service_name': 's3',
+            'region_name': settings.AWS_REGION,
+            'config': Config(signature_version='s3v4')
+        }
+        
+        # Only pass explicit credentials if they're provided (local dev)
+        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+            client_config['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
+            client_config['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
+        
+        self.s3_client = boto3.client(**client_config)
         self.bucket_name = settings.S3_BUCKET_NAME
     
     def generate_presigned_url(

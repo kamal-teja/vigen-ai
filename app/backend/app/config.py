@@ -14,8 +14,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # 7 days
 
     # AWS S3
-    AWS_ACCESS_KEY_ID: str
-    AWS_SECRET_ACCESS_KEY: str
+    # Make credentials optional to support IAM roles (App Runner, ECS, EC2)
+    # For local dev, set these in .env; for production, use IAM roles
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
     AWS_REGION: str
     S3_BUCKET_NAME: str
 
