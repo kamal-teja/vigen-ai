@@ -4,8 +4,8 @@
 # Make sure to configure AWS CLI first: aws configure
 
 # Configuration
-BUCKET_NAME="your-s3-bucket-name"
-CLOUDFRONT_DISTRIBUTION_ID="your-cloudfront-distribution-id" # Optional
+BUCKET_NAME="vigen-ai"
+CLOUDFRONT_DISTRIBUTION_ID="ESVG7ABJYQ8CK" # Optional
 
 echo "🚀 Building production bundle..."
 npm run build:prod

@@ -2,7 +2,7 @@
 
 # Configuration
 $BUCKET_NAME = "vigen-ai"
-$CLOUDFRONT_DISTRIBUTION_ID = "your-cloudfront-distribution-id" # Optional
+$CLOUDFRONT_DISTRIBUTION_ID = "ESVG7ABJYQ8CK" # Optional
 
 Write-Host "🚀 Building production bundle..." -ForegroundColor Yellow
 npm run build:prod

@@ -1,0 +1,61 @@
+# Environment files with secrets
+.env
+.env.*
+*.env
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation (optional, include if you want to keep images small)
+README.md
+*.md
+
+# Tests (optional)
+tests/
+test.py
+*_test.py
+test_*.py
+
+# Development files
+dockerfile.dev
+docker-compose*.yml
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.tar.gz
