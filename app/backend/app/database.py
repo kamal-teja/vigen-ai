@@ -104,6 +104,8 @@ class DynamoDBService:
         return response.get('Items', [])
 
     def update_advertisement(self, user_id: str, run_id: str, updates: dict) -> bool:
+        if 'updated_at' not in updates:
+            updates = {**updates, 'updated_at': datetime.utcnow().isoformat()}
         update_expression = "SET "
         expression_attribute_values = {}
         expression_attribute_names = {}

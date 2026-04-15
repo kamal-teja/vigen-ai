@@ -601,9 +601,9 @@ def concat_audios_to_single(
                 f.write(f"file '{p.resolve()}'\n")
                 if i < len(normalized_audios) - 1:
                     silence = tdir / f"silence_{i}.m4a"
-                    os.system(
-                        f'ffmpeg -f lavfi -i anullsrc=r=48000:cl=stereo:d=1.5 '
-                        f'-c:a aac -b:a 192k -ar 48000 {silence}'
+                    _run_ffmpeg(
+                        f'ffmpeg -y -f lavfi -i anullsrc=r=48000:cl=stereo:d=1.5 '
+                        f'-c:a aac -b:a 192k -ar 48000 {_ffmpeg_quote(str(silence))}'
                     )
                     f.write(f"file '{silence.resolve()}'\n")
 
