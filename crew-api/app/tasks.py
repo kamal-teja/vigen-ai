@@ -90,7 +90,7 @@ def run_pipeline(planner, script_writer, evaluator, imager, videographer, audio,
     script = generate_script(product_name, product_desc, ad_idea, prompts["script"])
     # enforce short dialogues BEFORE synthesizing audio
     script = _enforce_dialogue_caps(script, MAX_WORDS_PER_DIALOGUE)
-    print("Script generated succesfully with capped dialogue.")
+    print("Script generated successfully with capped dialogue.")
     update_status(run_id, StepName.script_generation_status, "COMPLETED")
 
     update_status(run_id, StepName.script_evaluation_status, "RUNNING")

@@ -79,21 +79,16 @@ def reel_start_async(model_id: str, model_input: dict, s3_uri: str) -> str:
         )
 
     try:
-        try:
-            return _invoke(bucket_only)["invocationArn"]
-        except ClientError as e:
-            # For visibility while debugging
-            print(f"[Nova Reel] StartAsyncInvoke failed with bucket-only URI={bucket_only}: {e}")
-            raise
-
+        return _invoke(bucket_only)["invocationArn"]
     except ClientError as e:
+        print(f"[Nova Reel] StartAsyncInvoke failed with bucket-only URI={bucket_only}: {e}")
         msg = str(e)
         if "Invalid Output Config" in msg or "Credentials" in msg:
             raise RuntimeError(
                 "Nova Reel async invoke failed: Invalid Output Config/Credentials.\n"
                 f"Attempted S3 URI: {bucket_only}\n"
                 "Check that:\n"
-                "  • outputDataConfig.s3OutputDataConfig.s3Uri == 's3://<bucket>' (NO https://, NO ARN, NO prefix)\n"
+                "  • outputDataConfig.s3OutputDataConfig.s3Uri == ‘s3://<bucket>’ (NO https://, NO ARN, NO prefix)\n"
                 "  • Your caller identity has s3:PutObject on that bucket\n"
                 "  • Bucket is in the same region and bucket policy doesn’t require KMS-only writes"
             ) from e
@@ -166,13 +161,6 @@ def mediaconvert():
         os.environ["MEDIACONVERT_ENDPOINT"] = url
         mc = boto3.client("mediaconvert", region_name=_region, config=_cfg, endpoint_url=url)
     return mc
-
-def presigned_http_url(bucket, key, expires_in=3600):
-    return s3().generate_presigned_url(
-        ClientMethod="get_object",
-        Params={"Bucket": bucket, "Key": key},
-        ExpiresIn=expires_in,
-    )
 
 def s3_url(bucket, key):
     return f"s3://{bucket}/{key.lstrip('/')}"

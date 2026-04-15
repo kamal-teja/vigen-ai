@@ -6,7 +6,7 @@ from .bedrock_clients import bedrock_runtime, put_json_s3
 def _get_model_id():
     mid = os.getenv("BEDROCK_SCRIPT_MODEL_ID")
     if not mid:
-        raise RuntimeError("BEDROCK_SCRIPT_MODEL_ID (Claude 3.7) is required.")
+        raise RuntimeError("BEDROCK_SCRIPT_MODEL_ID (Claude) is required.")
     return mid
 
 def _unwrap_code_fence(text: str) -> str:

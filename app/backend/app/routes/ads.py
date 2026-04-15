@@ -90,13 +90,6 @@ def get_advertisement_status(
 ):
     ad = _get_user_advertisement_or_404(run_id, current_user)
 
-    if not ad.get('run_id'):
-        return AdvertisementStatusResponse(
-            run_id=ad['run_id'],
-            status=AdvStatus(ad['status']),
-            crew_status=None
-        )
-
     try:
         status_response = requests.get(f"{settings.CREW_ENDPOINT_URL}/runs/{ad['run_id']}/status", timeout=5)
         status_response.raise_for_status()
